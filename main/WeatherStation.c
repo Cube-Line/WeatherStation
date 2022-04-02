@@ -4,25 +4,25 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "esp_system.h"
+#include "nvs_flash.h"
 #include "esp_event.h"
+#include <esp_netif.h>
+#include <esp_wifi.h>
+#include "wifi_manager.h"
+
 // #include "protocol_examples_common.h"
 // #include "addr_from_stdin.h"
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
-#include "nvs_flash.h"
-// #include "protocol_examples_common.h"
 #include "esp_tls.h"
+#include "esp_crt_bundle.h"
 #include "esp_http_client.h"
 
 #include "ssd1306.h"
 #include "font8x8_basic.h"
 
-
-#include <esp_wifi.h>
-#include <esp_netif.h>
-#include "esp_system.h"
-#include "wifi_manager.h"
 
 #include "cJSON.h"
 
@@ -48,13 +48,14 @@ static const char TAG[] = "main";
 
 //HTTP配置参数
 static const char *HTTP_TAG = "httpTask";
-#define MAX_HTTP_OUTPUT_BUFFER 1300
+#define MAX_HTTP_OUTPUT_BUFFER 2048
 #define HOST "api.seniverse.com"
 #define UserKey "SEsXJUQ-6J3l4H3Fc"
 #define Location "suzhou"
 #define Language "zh-Hans"
 #define Strat "0"
 #define Days "5"
+
 
 /**
  * @brief RTOS task that periodically prints the heap memory available.
@@ -88,20 +89,19 @@ static void http_client_task(void *pvParameters)
 {
 	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0}; // Buffer to store response of http request
 	int content_length = 0;
-	static const char *URL = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5";
+	// static const char *URL = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5";
 	esp_http_client_config_t config = {
-		.url = URL,
+		.url = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5",
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 
 	// GET Request
-	esp_http_client_set_method(client, HTTP_METHOD_GET);
+	esp_http_client_set_method(client, HTTP_METHOD_GET); //示例代码无此行;
 	esp_err_t err = esp_http_client_open(client, 0);
-		printf("正常进入\n");
-		content_length = esp_http_client_fetch_headers(client);
-		if (content_length < 0)
-		{
-			ESP_LOGE(HTTP_TAG, "HTTP client fetch headers failed");
+	content_length = esp_http_client_fetch_headers(client);
+	if (content_length < 0)
+	{
+		ESP_LOGE(HTTP_TAG, "HTTP client fetch headers failed");
 		}
 		else
 		{
@@ -112,7 +112,7 @@ static void http_client_task(void *pvParameters)
 						 esp_http_client_get_status_code(client),
 						 esp_http_client_get_content_length(client));
 				printf("data:%s", output_buffer);
-				// cJSON_parse_task(output_buffer);
+				json_request_parser(output_buffer);
 			}
 			else
 			{
@@ -123,10 +123,59 @@ static void http_client_task(void *pvParameters)
 	vTaskDelete(NULL);
 }
 
+void json_request_parser(char *json_data)
+{
+	// uint8_t
+	cJSON *root = NULL;
 
+	printf("Version: %s\n", cJSON_Version()); //打印版本号;
+	root = cJSON_Parse(json_data);			  // json_data 为心知天气的原始数据;
+	if (!root)
+	{
+		printf("Error before: [%s]\n", cJSON_GetErrorPtr());
+		return -1;
+	}
+	printf("%s\n\n", cJSON_Print(root)); /*将完整的数据以JSON格式打印出来*/
+	
 
+	uint8_t json[2048] = {0};
+	cJSON *root = cJSON_CreateObject();
+	cJSON *sensors = cJSON_CreateArray();
+	cJSON *id1 = cJSON_CreateObject();
+	cJSON *id2 = cJSON_CreateObject();
+	cJSON *iNumber = cJSON_CreateNumber(10);
 
+	cJSON_AddItemToObject(id1, "id", cJSON_CreateString("1"));
+	cJSON_AddItemToObject(id1, "temperature1", cJSON_CreateString("23"));
+	cJSON_AddItemToObject(id1, "temperature2", cJSON_CreateString("23"));
+	cJSON_AddItemToObject(id1, "humidity", cJSON_CreateString("55"));
+	cJSON_AddItemToObject(id1, "occupancy", cJSON_CreateString("1"));
+	cJSON_AddItemToObject(id1, "illumination", cJSON_CreateString("23"));
 
+	cJSON_AddItemToObject(id2, "id", cJSON_CreateString("2"));
+	cJSON_AddItemToObject(id2, "temperature1", cJSON_CreateString("23"));
+	cJSON_AddItemToObject(id2, "temperature2", cJSON_CreateString("23"));
+	cJSON_AddItemToObject(id2, "humidity", cJSON_CreateString("55"));
+	cJSON_AddItemToObject(id2, "occupancy", cJSON_CreateString("1"));
+	cJSON_AddItemToObject(id2, "illumination", cJSON_CreateString("23"));
+
+	cJSON_AddItemToObject(id2, "value", iNumber);
+
+	cJSON_AddItemToArray(sensors, id1);
+	cJSON_AddItemToArray(sensors, id2);
+
+	cJSON_AddItemToObject(root, "sensors", sensors);
+	char *str = cJSON_Print(root);
+
+	uint32_t jslen = strlen(str);
+	memcpy(json, str, jslen);
+	printf("%s\n", json);
+
+	cJSON_Delete(root);
+	free(str);
+	str = NULL;
+	
+}
 
 void app_main(void)
 {
