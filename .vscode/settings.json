@@ -4,5 +4,6 @@
 		"interface/ftdi/esp32_devkitj_v1.cfg",
 		"target/esp32.cfg"
 	],
-	"idf.port": "COM3"
+	"idf.port": "COM3",
+	"idf.flashType": "UART"
 }

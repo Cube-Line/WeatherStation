@@ -89,10 +89,11 @@ static void http_client_task(void *pvParameters)
 {
 	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0}; // Buffer to store response of http request
 	int content_length = 0;
-	// static const char *URL = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5";
+	
 	esp_http_client_config_t config = {
-		.url = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5",
-	};
+		// .url = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5",
+		.url = "https://api.seniverse.com/v3/weather/daily.json?key=SiJ6Yd1LFtd3-gHzr&location=suzhou&language=zh-Hans&unit=c&start=0&days=3",
+		};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 
 	// GET Request
@@ -112,7 +113,7 @@ static void http_client_task(void *pvParameters)
 						 esp_http_client_get_status_code(client),
 						 esp_http_client_get_content_length(client));
 				printf("data:%s", output_buffer);
-				json_request_parser(output_buffer);
+				// json_request_parser(output_buffer);
 			}
 			else
 			{
@@ -139,41 +140,41 @@ void json_request_parser(char *json_data)
 	
 
 	uint8_t json[2048] = {0};
-	cJSON *root = cJSON_CreateObject();
-	cJSON *sensors = cJSON_CreateArray();
-	cJSON *id1 = cJSON_CreateObject();
-	cJSON *id2 = cJSON_CreateObject();
-	cJSON *iNumber = cJSON_CreateNumber(10);
+	// cJSON *root = cJSON_CreateObject();
+	// cJSON *sensors = cJSON_CreateArray();
+	// cJSON *id1 = cJSON_CreateObject();
+	// cJSON *id2 = cJSON_CreateObject();
+	// cJSON *iNumber = cJSON_CreateNumber(10);
 
-	cJSON_AddItemToObject(id1, "id", cJSON_CreateString("1"));
-	cJSON_AddItemToObject(id1, "temperature1", cJSON_CreateString("23"));
-	cJSON_AddItemToObject(id1, "temperature2", cJSON_CreateString("23"));
-	cJSON_AddItemToObject(id1, "humidity", cJSON_CreateString("55"));
-	cJSON_AddItemToObject(id1, "occupancy", cJSON_CreateString("1"));
-	cJSON_AddItemToObject(id1, "illumination", cJSON_CreateString("23"));
+	// cJSON_AddItemToObject(id1, "id", cJSON_CreateString("1"));
+	// cJSON_AddItemToObject(id1, "temperature1", cJSON_CreateString("23"));
+	// cJSON_AddItemToObject(id1, "temperature2", cJSON_CreateString("23"));
+	// cJSON_AddItemToObject(id1, "humidity", cJSON_CreateString("55"));
+	// cJSON_AddItemToObject(id1, "occupancy", cJSON_CreateString("1"));
+	// cJSON_AddItemToObject(id1, "illumination", cJSON_CreateString("23"));
 
-	cJSON_AddItemToObject(id2, "id", cJSON_CreateString("2"));
-	cJSON_AddItemToObject(id2, "temperature1", cJSON_CreateString("23"));
-	cJSON_AddItemToObject(id2, "temperature2", cJSON_CreateString("23"));
-	cJSON_AddItemToObject(id2, "humidity", cJSON_CreateString("55"));
-	cJSON_AddItemToObject(id2, "occupancy", cJSON_CreateString("1"));
-	cJSON_AddItemToObject(id2, "illumination", cJSON_CreateString("23"));
+	// cJSON_AddItemToObject(id2, "id", cJSON_CreateString("2"));
+	// cJSON_AddItemToObject(id2, "temperature1", cJSON_CreateString("23"));
+	// cJSON_AddItemToObject(id2, "temperature2", cJSON_CreateString("23"));
+	// cJSON_AddItemToObject(id2, "humidity", cJSON_CreateString("55"));
+	// cJSON_AddItemToObject(id2, "occupancy", cJSON_CreateString("1"));
+	// cJSON_AddItemToObject(id2, "illumination", cJSON_CreateString("23"));
 
-	cJSON_AddItemToObject(id2, "value", iNumber);
+	// cJSON_AddItemToObject(id2, "value", iNumber);
 
-	cJSON_AddItemToArray(sensors, id1);
-	cJSON_AddItemToArray(sensors, id2);
+	// cJSON_AddItemToArray(sensors, id1);
+	// cJSON_AddItemToArray(sensors, id2);
 
-	cJSON_AddItemToObject(root, "sensors", sensors);
-	char *str = cJSON_Print(root);
+	// cJSON_AddItemToObject(root, "sensors", sensors);
+	// char *str = cJSON_Print(root);
 
-	uint32_t jslen = strlen(str);
-	memcpy(json, str, jslen);
-	printf("%s\n", json);
+	// uint32_t jslen = strlen(str);
+	// memcpy(json, str, jslen);
+	// printf("%s\n", json);
 
-	cJSON_Delete(root);
-	free(str);
-	str = NULL;
+	// cJSON_Delete(root);
+	// free(str);
+	// str = NULL;
 	
 }
 
