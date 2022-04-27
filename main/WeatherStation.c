@@ -183,7 +183,6 @@ void app_main(void)
 	SSD1306_t dev;
 	uint8_t center, top, bottom;
 	char lineChar[20];
-
 	/* start the wifi manager */
 	wifi_manager_start();
 
