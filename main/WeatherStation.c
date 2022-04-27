@@ -140,7 +140,7 @@ void json_request_parser(char *json_data)
 	
 
 	uint8_t json[2048] = {0};
-	// cJSON *root = cJSON_CreateObject();
+	cJSON *root = cJSON_CreateObject();
 	// cJSON *sensors = cJSON_CreateArray();
 	// cJSON *id1 = cJSON_CreateObject();
 	// cJSON *id2 = cJSON_CreateObject();
