@@ -23,7 +23,6 @@
 #include "ssd1306.h"
 #include "font8x8_basic.h"
 
-
 #include "cJSON.h"
 
 /*
@@ -45,8 +44,7 @@
 #define tag "SSD1306"
 static const char TAG[] = "main";
 
-
-//HTTP配置参数
+// HTTP配置参数
 static const char *HTTP_TAG = "httpTask";
 #define MAX_HTTP_OUTPUT_BUFFER 2048
 #define HOST "api.seniverse.com"
@@ -55,7 +53,6 @@ static const char *HTTP_TAG = "httpTask";
 #define Language "zh-Hans"
 #define Strat "0"
 #define Days "5"
-
 
 /**
  * @brief RTOS task that periodically prints the heap memory available.
@@ -84,63 +81,47 @@ void cb_connection_ok(void *pvParameter)
 	ESP_LOGI(TAG, "I have a connection and my IP is %s!", str_ip);
 }
 
-/** HTTP functions **/
-static void http_client_task(void *pvParameters)
-{
-	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0}; // Buffer to store response of http request
-	int content_length = 0;
-	
-	esp_http_client_config_t config = {
-		// .url = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5",
-		.url = "https://api.seniverse.com/v3/weather/daily.json?key=SiJ6Yd1LFtd3-gHzr&location=suzhou&language=zh-Hans&unit=c&start=0&days=3",
-		};
-	esp_http_client_handle_t client = esp_http_client_init(&config);
-
-	// GET Request
-	esp_http_client_set_method(client, HTTP_METHOD_GET); //示例代码无此行;
-	esp_err_t err = esp_http_client_open(client, 0);
-	content_length = esp_http_client_fetch_headers(client);
-	if (content_length < 0)
-	{
-		ESP_LOGE(HTTP_TAG, "HTTP client fetch headers failed");
-		}
-		else
-		{
-			int data_read = esp_http_client_read_response(client, output_buffer, MAX_HTTP_OUTPUT_BUFFER);
-			if (data_read >= 0)
-			{
-				ESP_LOGI(HTTP_TAG, "HTTP GET Status = %d, content_length = %d",
-						 esp_http_client_get_status_code(client),
-						 esp_http_client_get_content_length(client));
-				printf("data:%s", output_buffer);
-				// json_request_parser(output_buffer);
-			}
-			else
-			{
-				ESP_LOGE(HTTP_TAG, "Failed to read response");
-			}
-		}
-	esp_http_client_close(client);
-	vTaskDelete(NULL);
-}
-
 void json_request_parser(char *json_data)
 {
 	// uint8_t
 	cJSON *root = NULL;
-
+	cJSON *cjson_results = NULL;
+	uint8_t cjson_results_size = 0;
+	cJSON *cjson_results_item = NULL;
+	cJSON *cjson_Location = NULL;
+	cJSON *cjson_Location_name = NULL;
+	cJSON *cjson_Location_country = NULL;
+	cJSON *cjson_Daily = NULL;
+	cJSON *cjson_Daily_date = NULL;
+	cJSON *cjson_Daily_textday = NULL;
+	cJSON *cjson_Daily_textnight = NULL;
+	cJSON *cjson_Daily_HIGH = NULL;
+	cJSON *cjson_Daily_LOW = NULL;
+	uint8_t i;
 	printf("Version: %s\n", cJSON_Version()); //打印版本号;
 	root = cJSON_Parse(json_data);			  // json_data 为心知天气的原始数据;
 	if (!root)
 	{
 		printf("Error before: [%s]\n", cJSON_GetErrorPtr());
-		return -1;
+		// return -1;
 	}
-	printf("%s\n\n", cJSON_Print(root)); /*将完整的数据以JSON格式打印出来*/
-	
+	// printf("%s\n\n", cJSON_Print(root)); /*将完整的数据以JSON格式打印出来*/
+	cjson_results = cJSON_GetObjectItem(root, "results");
+	cjson_Location = cJSON_GetObjectItem(cJSON_GetArrayItem(cjson_results, 0), "location");
+	cjson_Location_name = cJSON_GetObjectItem(cjson_Location, "name");
+	printf("result[]:%s\n", cJSON_Print(cjson_Location_name));
+	// cjson_results_size = cJSON_GetArraySize(cjson_results);
+	// for (i = 0; i < cjson_results_size; i++)
+	// {
+	// 	cjson_results_item = cJSON_GetObjectItem(cJSON_GetArrayItem(cjson_results, i));
+	// }
+	printf("result[]:%s\n", cjson_Location_name->valuestring);
+	printf("OK8\n");
 
-	uint8_t json[2048] = {0};
-	cJSON *root = cJSON_CreateObject();
+	// printf("results is:%s\n", cjson_results->valuestring);
+
+	// uint8_t json[2048] = {0};
+	// cJSON *root = cJSON_CreateObject();
 	// cJSON *sensors = cJSON_CreateArray();
 	// cJSON *id1 = cJSON_CreateObject();
 	// cJSON *id2 = cJSON_CreateObject();
@@ -172,10 +153,48 @@ void json_request_parser(char *json_data)
 	// memcpy(json, str, jslen);
 	// printf("%s\n", json);
 
-	// cJSON_Delete(root);
+	cJSON_Delete(root);
 	// free(str);
 	// str = NULL;
-	
+}
+
+/** HTTP functions **/
+static void http_client_task(void *pvParameters)
+{
+	char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0}; // Buffer to store response of http request
+	int content_length = 0;
+
+	esp_http_client_config_t config = {
+		// .url = "http://api.seniverse.com/v3/weather/daily.json?key=SEsXJUQ-6J3l4H3Fc&location=suzhou&language=zh-Hans&unit=c&start=0&days=5",
+		.url = "https://api.seniverse.com/v3/weather/daily.json?key=SiJ6Yd1LFtd3-gHzr&location=suzhou&language=zh-Hans&unit=c&start=0&days=3",
+	};
+	esp_http_client_handle_t client = esp_http_client_init(&config);
+	// GET Request
+	esp_http_client_set_method(client, HTTP_METHOD_GET); //示例代码无此行;
+	esp_err_t err = esp_http_client_open(client, 0);
+	content_length = esp_http_client_fetch_headers(client);
+	if (content_length < 0)
+	{
+		ESP_LOGE(HTTP_TAG, "HTTP client fetch headers failed");
+	}
+	else
+	{
+		int data_read = esp_http_client_read_response(client, output_buffer, MAX_HTTP_OUTPUT_BUFFER);
+		if (data_read >= 0)
+		{
+			ESP_LOGI(HTTP_TAG, "HTTP GET Status = %d, content_length = %d",
+					 esp_http_client_get_status_code(client),
+					 esp_http_client_get_content_length(client));
+			// printf("data is:%s", output_buffer);
+			json_request_parser(output_buffer);
+		}
+		else
+		{
+			ESP_LOGE(HTTP_TAG, "Failed to read response");
+		}
+	}
+	esp_http_client_close(client);
+	vTaskDelete(NULL);
 }
 
 void app_main(void)
@@ -193,9 +212,9 @@ void app_main(void)
 	xTaskCreatePinnedToCore(&monitoring_task, "monitoring_task", 2048, NULL, 1, NULL, 1);
 	printf("正常进入0\n");
 	vTaskDelay(1000);
-	printf("正常进入1\n");
+	printf("OK1\n");
 	xTaskCreate(http_client_task, "http_client", 5120, NULL, 3, NULL);
-	vTaskDelay(1000);
+	vTaskDelay(5000);
 	/************************************************
 #if CONFIG_I2C_INTERFACE
 	ESP_LOGI(tag, "INTERFACE is i2c");
