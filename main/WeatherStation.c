@@ -186,8 +186,7 @@ void json_request_parser(char *json_data)
 		printf("wind_speed[%d] is: %s\n", i, localWeather.daily_weather[i].wind_speed->valuestring);
 		printf("wind_scale[%d] is: %s\n", i, localWeather.daily_weather[i].wind_scale->valuestring);
 		printf("humidity[%d] is: %s\n", i, localWeather.daily_weather[i].humidity->valuestring);
-		
-	}
+		}
 	printf("The END\n");
 	cJSON_Delete(root); //清理内存;
 }
@@ -219,7 +218,6 @@ static void http_client_task(void *pvParameters)
 			ESP_LOGI(HTTP_TAG, "HTTP GET Status = %d, content_length = %d",
 					 esp_http_client_get_status_code(client),
 					 esp_http_client_get_content_length(client));
-			// printf("data is:%s", output_buffer);
 			json_request_parser(output_buffer);
 		}
 		else
