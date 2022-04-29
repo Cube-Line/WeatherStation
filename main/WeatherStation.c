@@ -244,7 +244,7 @@ void app_main(void)
 	xTaskCreatePinnedToCore(&monitoring_task, "monitoring_task", 2048, NULL, 1, NULL, 1);
 	xTaskCreate(http_client_task, "http_client", 5120, NULL, 3, NULL);
 	vTaskDelay(5000);
-	/************************************************
+
 #if CONFIG_I2C_INTERFACE
 	ESP_LOGI(tag, "INTERFACE is i2c");
 	ESP_LOGI(tag, "CONFIG_SDA_GPIO=%d", CONFIG_SDA_GPIO);
@@ -403,7 +403,6 @@ void app_main(void)
 
 	// Fade Out
 	ssd1306_fadeout(&dev);
-************************************************/
 
 #if 0
 	// Fade Out
