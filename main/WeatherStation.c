@@ -47,12 +47,43 @@ static const char TAG[] = "main";
 // HTTP配置参数
 static const char *HTTP_TAG = "httpTask";
 #define MAX_HTTP_OUTPUT_BUFFER 2048
-#define HOST "api.seniverse.com"
-#define UserKey "SEsXJUQ-6J3l4H3Fc"
-#define Location "suzhou"
-#define Language "zh-Hans"
-#define Strat "0"
-#define Days "5"
+// #define HOST "api.seniverse.com"
+// #define UserKey "SEsXJUQ-6J3l4H3Fc"
+// #define Location "suzhou"
+// #define Language "zh-Hans"
+// #define Strat "0"
+// #define Days "5"
+
+typedef struct weather
+{
+	cJSON *date;
+	cJSON *text_day;
+	cJSON *code_day;
+	cJSON *text_night;
+	cJSON *code_night;
+	cJSON *high;
+	cJSON *low;
+	cJSON *rainfall;
+	cJSON *precip;
+	cJSON *wind_direction;
+	cJSON *wind_direction_degree;
+	cJSON *wind_speed;
+	cJSON *wind_scale;
+	cJSON *humidity;
+} daily;
+
+typedef struct
+{
+	cJSON *id;
+	cJSON *name;
+	cJSON *country;
+	cJSON *path;
+	cJSON *timezone;
+	cJSON *timezone_offset;
+	daily daily_weather[3];
+	cJSON *last_update;
+
+} weather_data;
 
 /**
  * @brief RTOS task that periodically prints the heap memory available.
@@ -87,17 +118,16 @@ void json_request_parser(char *json_data)
 	cJSON *root = NULL;
 	cJSON *cjson_results = NULL;
 	uint8_t cjson_results_size = 0;
-	cJSON *cjson_results_item = NULL;
-	cJSON *cjson_Location = NULL;
-	cJSON *cjson_Location_name = NULL;
-	cJSON *cjson_Location_country = NULL;
 	cJSON *cjson_Daily = NULL;
+	cJSON *cjson_Daily_item = NULL;
+	cJSON *cjson_Location = NULL;
 	cJSON *cjson_Daily_date = NULL;
 	cJSON *cjson_Daily_textday = NULL;
 	cJSON *cjson_Daily_textnight = NULL;
 	cJSON *cjson_Daily_HIGH = NULL;
 	cJSON *cjson_Daily_LOW = NULL;
-	uint8_t i;
+	uint8_t i, daily_array_size;
+	weather_data localWeather;
 	printf("Version: %s\n", cJSON_Version()); //打印版本号;
 	root = cJSON_Parse(json_data);			  // json_data 为心知天气的原始数据;
 	if (!root)
@@ -108,54 +138,58 @@ void json_request_parser(char *json_data)
 	// printf("%s\n\n", cJSON_Print(root)); /*将完整的数据以JSON格式打印出来*/
 	cjson_results = cJSON_GetObjectItem(root, "results");
 	cjson_Location = cJSON_GetObjectItem(cJSON_GetArrayItem(cjson_results, 0), "location");
-	cjson_Location_name = cJSON_GetObjectItem(cjson_Location, "name");
-	printf("result[]:%s\n", cJSON_Print(cjson_Location_name));
-	// cjson_results_size = cJSON_GetArraySize(cjson_results);
-	// for (i = 0; i < cjson_results_size; i++)
-	// {
-	// 	cjson_results_item = cJSON_GetObjectItem(cJSON_GetArrayItem(cjson_results, i));
-	// }
-	printf("result[]:%s\n", cjson_Location_name->valuestring);
-	printf("OK8\n");
-
-	// printf("results is:%s\n", cjson_results->valuestring);
-
-	// uint8_t json[2048] = {0};
-	// cJSON *root = cJSON_CreateObject();
-	// cJSON *sensors = cJSON_CreateArray();
-	// cJSON *id1 = cJSON_CreateObject();
-	// cJSON *id2 = cJSON_CreateObject();
-	// cJSON *iNumber = cJSON_CreateNumber(10);
-
-	// cJSON_AddItemToObject(id1, "id", cJSON_CreateString("1"));
-	// cJSON_AddItemToObject(id1, "temperature1", cJSON_CreateString("23"));
-	// cJSON_AddItemToObject(id1, "temperature2", cJSON_CreateString("23"));
-	// cJSON_AddItemToObject(id1, "humidity", cJSON_CreateString("55"));
-	// cJSON_AddItemToObject(id1, "occupancy", cJSON_CreateString("1"));
-	// cJSON_AddItemToObject(id1, "illumination", cJSON_CreateString("23"));
-
-	// cJSON_AddItemToObject(id2, "id", cJSON_CreateString("2"));
-	// cJSON_AddItemToObject(id2, "temperature1", cJSON_CreateString("23"));
-	// cJSON_AddItemToObject(id2, "temperature2", cJSON_CreateString("23"));
-	// cJSON_AddItemToObject(id2, "humidity", cJSON_CreateString("55"));
-	// cJSON_AddItemToObject(id2, "occupancy", cJSON_CreateString("1"));
-	// cJSON_AddItemToObject(id2, "illumination", cJSON_CreateString("23"));
-
-	// cJSON_AddItemToObject(id2, "value", iNumber);
-
-	// cJSON_AddItemToArray(sensors, id1);
-	// cJSON_AddItemToArray(sensors, id2);
-
-	// cJSON_AddItemToObject(root, "sensors", sensors);
-	// char *str = cJSON_Print(root);
-
-	// uint32_t jslen = strlen(str);
-	// memcpy(json, str, jslen);
-	// printf("%s\n", json);
-
-	cJSON_Delete(root);
-	// free(str);
-	// str = NULL;
+	localWeather.id = cJSON_GetObjectItem(cjson_Location, "id");
+	localWeather.name = cJSON_GetObjectItem(cjson_Location, "name");
+	localWeather.country = cJSON_GetObjectItem(cjson_Location, "country");
+	localWeather.path = cJSON_GetObjectItem(cjson_Location, "path");
+	localWeather.timezone = cJSON_GetObjectItem(cjson_Location, "timezone");
+	localWeather.timezone_offset = cJSON_GetObjectItem(cjson_Location, "timezone_offset");
+	localWeather.last_update = cJSON_GetObjectItem(cJSON_GetArrayItem(cjson_results, 0), "last_update");
+	printf("localWeather.id: %s\n", localWeather.id->valuestring);
+	printf("localWeather.name: %s\n", localWeather.name->valuestring);
+	printf("localWeather.country: %s\n", localWeather.country->valuestring);
+	printf("localWeather.path: %s\n", localWeather.path->valuestring);
+	printf("localWeather.timezone: %s\n", localWeather.timezone->valuestring);
+	printf("localWeather.timezone_offset: %s\n", localWeather.timezone_offset->valuestring);
+	printf("localWeather.last_update: %s\n", localWeather.last_update->valuestring);
+	cjson_Daily = cJSON_GetObjectItem(cJSON_GetArrayItem(cjson_results, 0), "daily");
+	daily_array_size = cJSON_GetArraySize(cjson_Daily);
+	for (i = 0; i < daily_array_size; i++)
+	{
+		cjson_Daily_item = cJSON_GetArrayItem(cjson_Daily, i);
+		localWeather.daily_weather[i].date = cJSON_GetObjectItem(cjson_Daily_item, "date");
+		localWeather.daily_weather[i].text_day = cJSON_GetObjectItem(cjson_Daily_item, "text_day");
+		localWeather.daily_weather[i].code_day = cJSON_GetObjectItem(cjson_Daily_item, "code_day");
+		localWeather.daily_weather[i].text_night = cJSON_GetObjectItem(cjson_Daily_item, "text_night");
+		localWeather.daily_weather[i].code_night = cJSON_GetObjectItem(cjson_Daily_item, "code_night");
+		localWeather.daily_weather[i].high = cJSON_GetObjectItem(cjson_Daily_item, "high");
+		localWeather.daily_weather[i].low = cJSON_GetObjectItem(cjson_Daily_item, "low");
+		localWeather.daily_weather[i].rainfall = cJSON_GetObjectItem(cjson_Daily_item, "rainfall");
+		localWeather.daily_weather[i].precip = cJSON_GetObjectItem(cjson_Daily_item, "precip");
+		localWeather.daily_weather[i].wind_direction = cJSON_GetObjectItem(cjson_Daily_item, "wind_direction");
+		localWeather.daily_weather[i].wind_direction_degree = cJSON_GetObjectItem(cjson_Daily_item, "wind_direction_degree");
+		localWeather.daily_weather[i].wind_speed = cJSON_GetObjectItem(cjson_Daily_item, "wind_speed");
+		localWeather.daily_weather[i].wind_scale = cJSON_GetObjectItem(cjson_Daily_item, "wind_scale");
+		localWeather.daily_weather[i].humidity = cJSON_GetObjectItem(cjson_Daily_item, "humidity");
+		printf("\n");
+		printf("date[%d] is: %s\n", i, localWeather.daily_weather[i].date->valuestring);
+		printf("text_day[%d] is: %s\n", i, localWeather.daily_weather[i].text_day->valuestring);
+		printf("code_day[%d] is: %s\n", i, localWeather.daily_weather[i].code_day->valuestring);
+		printf("text_night[%d] is: %s\n", i, localWeather.daily_weather[i].text_night->valuestring);
+		printf("code_night[%d] is: %s\n", i, localWeather.daily_weather[i].code_night->valuestring);
+		printf("high[%d] is: %s\n", i, localWeather.daily_weather[i].high->valuestring);
+		printf("low[%d] is: %s\n", i, localWeather.daily_weather[i].low->valuestring);
+		printf("rainfall[%d] is: %s\n", i, localWeather.daily_weather[i].rainfall->valuestring);
+		printf("precip[%d] is: %s\n", i, localWeather.daily_weather[i].precip->valuestring);
+		printf("wind_direction[%d] is: %s\n", i, localWeather.daily_weather[i].wind_direction->valuestring);
+		printf("wind_direction_degree[%d] is: %s\n", i, localWeather.daily_weather[i].wind_direction_degree->valuestring);
+		printf("wind_speed[%d] is: %s\n", i, localWeather.daily_weather[i].wind_speed->valuestring);
+		printf("wind_scale[%d] is: %s\n", i, localWeather.daily_weather[i].wind_scale->valuestring);
+		printf("humidity[%d] is: %s\n", i, localWeather.daily_weather[i].humidity->valuestring);
+		
+	}
+	printf("The END\n");
+	cJSON_Delete(root); //清理内存;
 }
 
 /** HTTP functions **/
@@ -210,9 +244,6 @@ void app_main(void)
 
 	/* your code should go here. Here we simply create a task on core 2 that monitors free heap memory */
 	xTaskCreatePinnedToCore(&monitoring_task, "monitoring_task", 2048, NULL, 1, NULL, 1);
-	printf("正常进入0\n");
-	vTaskDelay(1000);
-	printf("OK1\n");
 	xTaskCreate(http_client_task, "http_client", 5120, NULL, 3, NULL);
 	vTaskDelay(5000);
 	/************************************************
